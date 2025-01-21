@@ -1,28 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 function ProjectInput() {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [projects, setProjects] = useState([
-        {
-            id: 1270,
-            name: '湖南工作管理费.1210-2024142121200331',
-            customer: '石炭市直',
-            type: '轧机轴承油',
-            quantity: 114,
-            status: '运行中',
-            progress: '0%',
-            createTime: '2024-12-12',
-            projectTime: '2025-02-18',
-            manager: '用页（用页）',
-        },
-        // 其他初始项目数据...
-    ]);
+    const [projects, setProjects] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchProjects = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/projects`);
+                setProjects(response.data);
+                setError(null);
+            } catch (err) {
+                console.error("Error fetching projects:", err);
+                setError("Failed to load projects. Please try again later.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProjects();
+    }, []);
 
     const handleOpenModal = () => setIsModalOpen(true);
     const handleCloseModal = () => setIsModalOpen(false);
-    const handleSubmitProject = (newProject) => {
-        setProjects([...projects, newProject]);
-        handleCloseModal();
+    const handleSubmitProject = async (newProject) => {
+        try {
+            const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/projects/`, {
+                name: newProject.name,
+                description: `Customer: ${newProject.customer}\nType: ${newProject.type}\nManager: ${newProject.manager}`,
+                status: newProject.status || '运行中',
+                end_date: newProject.projectTime
+            });
+            
+            setProjects([...projects, response.data]);
+            setError(null);
+            handleCloseModal();
+        } catch (err) {
+            console.error("Error creating project:", err);
+            setError("Failed to create project. Please try again later.");
+        }
     };
 
     return (
@@ -38,38 +57,48 @@ function ProjectInput() {
                 />
             )}
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>项目编号</th>
-                        <th>项目名称</th>
-                        <th>客户名称</th>
-                        <th>项目类型</th>
-                        <th>零件数量</th>
-                        <th>状态</th>
-                        <th>进度</th>
-                        <th>创建时间</th>
-                        <th>项目工程</th>
-                        <th>负责人</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {projects.map((project) => (
-                        <tr key={project.id}>
-                            <td>{project.id}</td>
-                            <td>{project.name}</td>
-                            <td>{project.customer}</td>
-                            <td>{project.type}</td>
-                            <td>{project.quantity}</td>
-                            <td>{project.status}</td>
-                            <td>{project.progress}</td>
-                            <td>{project.createTime}</td>
-                            <td>{project.projectTime}</td>
-                            <td>{project.manager}</td>
+            {loading ? (
+                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                    加载中...
+                </div>
+            ) : error ? (
+                <div style={{ color: 'red', textAlign: 'center', padding: '2rem' }}>
+                    {error}
+                </div>
+            ) : (
+                <table>
+                    <thead>
+                        <tr>
+                            <th>项目编号</th>
+                            <th>项目名称</th>
+                            <th>客户名称</th>
+                            <th>项目类型</th>
+                            <th>零件数量</th>
+                            <th>状态</th>
+                            <th>进度</th>
+                            <th>创建时间</th>
+                            <th>项目工程</th>
+                            <th>负责人</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {projects.map((project) => (
+                            <tr key={project.id}>
+                                <td>{project.id}</td>
+                                <td>{project.name}</td>
+                                <td>{project.description}</td>
+                                <td>{project.type || '-'}</td>
+                                <td>{project.quantity || '-'}</td>
+                                <td>{project.status}</td>
+                                <td>{project.progress || '0%'}</td>
+                                <td>{new Date(project.start_date).toLocaleDateString()}</td>
+                                <td>{project.end_date ? new Date(project.end_date).toLocaleDateString() : '-'}</td>
+                                <td>{project.manager || '-'}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            )}
         </div>
     );
 }
