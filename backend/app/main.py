@@ -87,7 +87,7 @@ def list_tasks(project_id: Optional[int] = None, skip: int = 0, limit: int = 100
     return query.offset(skip).limit(limit).all()
 
 # Quality Inspection endpoints
-@app.post("/quality-inspections/", response_model=QualityInspectionSchema)
+@app.post("/quality_inspections/", response_model=QualityInspectionSchema)
 def create_quality_inspection(inspection: QualityInspectionCreate, db: Session = Depends(get_db)):
     project = db.query(Project).filter(Project.id == inspection.project_id).first()
     if not project:
@@ -98,7 +98,7 @@ def create_quality_inspection(inspection: QualityInspectionCreate, db: Session =
     db.refresh(db_inspection)
     return db_inspection
 
-@app.get("/quality-inspections/", response_model=List[QualityInspectionSchema])
+@app.get("/quality_inspections/", response_model=List[QualityInspectionSchema])
 def list_quality_inspections(project_id: Optional[int] = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     query = db.query(QualityInspection)
     if project_id:
