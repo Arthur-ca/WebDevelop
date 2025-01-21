@@ -70,7 +70,7 @@
 
 3. Start the server:
    ```bash
-   poetry run uvicorn app.main:app --reload --port 8000
+   uvicorn backend.app.main:app --reload
    ```
 
 4. Configure environment:

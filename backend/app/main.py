@@ -1,28 +1,13 @@
 import sys
 import os
+from pathlib import Path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
-
-# Import database components and models
-from fastapi import FastAPI, Depends, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from typing import List, Optional
-
-app = FastAPI()
-
-# Disable CORS. Do not remove this for full-stack development.
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
-    allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
-)
 
 from app.database import Base, engine, get_db
 from app.models import Project, Task, QualityInspection
@@ -49,8 +34,13 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-# Create database tables before app starts
-Base.metadata.create_all(bind=engine)
+# Initialize database tables
+init_db()
+
+# Root endpoint
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the WebDevelop API!"}
 
 # Health check endpoint
 @app.get("/healthz")
