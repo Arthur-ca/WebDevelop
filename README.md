@@ -26,7 +26,7 @@
 4. 配置环境变量：
    在 frontend/.env 文件中设置后端URL：
    ```
-   VITE_BACKEND_URL=https://user:09c6ddbb08a546e22909d24612de0cc5@github-web-repo-tunnel-5rkrjk7a.devinapps.com
+   VITE_BACKEND_URL=http://localhost:8000
    ```
 
 ### 前端设置
@@ -76,7 +76,7 @@
 4. Configure environment:
    Set the backend URL in frontend/.env:
    ```
-   VITE_BACKEND_URL=https://user:09c6ddbb08a546e22909d24612de0cc5@github-web-repo-tunnel-5rkrjk7a.devinapps.com
+   VITE_BACKEND_URL=http://localhost:8000
    ```
 
 ### Frontend Setup
@@ -107,5 +107,3 @@
 4. Test role switching functionality
 
 如有任何问题，请随时询问。/ Feel free to ask if you have any questions.
-
-ATTACHMENT:"https://app.devin.ai/attachments/50ca3f34-13ad-4f72-b0ff-a3a594b89ff1/project_package.zip"
