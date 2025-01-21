@@ -8,9 +8,9 @@
 - Poetry (Python包管理器)
 
 ### 后端设置
-1. 解压项目包：
+1. 安装 Poetry (如果还未安装):
    ```bash
-   unzip project_package.zip
+   curl -sSL https://install.python-poetry.org | python3 -
    ```
 
 2. 安装依赖：
@@ -58,9 +58,9 @@
 - Poetry (Python package manager)
 
 ### Backend Setup
-1. Extract the project package:
+1. Install Poetry (if not already installed):
    ```bash
-   unzip project_package.zip
+   curl -sSL https://install.python-poetry.org | python3 -
    ```
 
 2. Install dependencies:

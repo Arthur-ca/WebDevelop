@@ -5,6 +5,9 @@ from typing import Optional, List
 # Project Schemas
 class ProjectBase(BaseModel):
     name: str
+    customer: Optional[str] = None  # 客户名称
+    type: Optional[str] = None      # 项目类型
+    manager: Optional[str] = None   # 负责人
     description: Optional[str] = None
     status: str
     end_date: Optional[datetime] = None

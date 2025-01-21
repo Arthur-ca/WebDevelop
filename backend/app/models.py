@@ -8,7 +8,10 @@ class Project(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
-    description = Column(String)
+    customer = Column(String, nullable=True)  # 客户名称
+    type = Column(String, nullable=True)      # 项目类型
+    manager = Column(String, nullable=True)   # 负责人
+    description = Column(String, nullable=True)
     start_date = Column(DateTime, default=datetime.utcnow)
     end_date = Column(DateTime, nullable=True)
     status = Column(String)  # 'planning', 'in_progress', 'completed', 'on_hold'
