@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import { ProjectContext } from '../../components/ProjectContext';
 
-function QualityInspection({ projectId }) {
+function QualityInspection() {
+    const { selectedProject } = useContext(ProjectContext);
+    const projectId = selectedProject?.id;
     const [project, setProject] = useState(null);
     const [inspections, setInspections] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -13,7 +16,7 @@ function QualityInspection({ projectId }) {
                 setLoading(true);
                 const [projectResponse, inspectionsResponse] = await Promise.all([
                     axios.get(`${import.meta.env.VITE_BACKEND_URL}/projects/${projectId}`),
-                    axios.get(`${import.meta.env.VITE_BACKEND_URL}/quality-inspections/?project_id=${projectId}`)
+                    axios.get(`${import.meta.env.VITE_BACKEND_URL}/quality_inspections/?project_id=${projectId}`)
                 ]);
                 setProject(projectResponse.data);
                 setInspections(inspectionsResponse.data);
@@ -37,6 +40,10 @@ function QualityInspection({ projectId }) {
 
     if (error) {
         return <div style={{ color: 'red', textAlign: 'center', padding: '2rem' }}>{error}</div>;
+    }
+
+    if (!selectedProject) {
+        return <div style={{ textAlign: 'center', padding: '2rem' }}>请先选择一个项目</div>;
     }
 
     if (!project) {
@@ -64,7 +71,7 @@ function QualityInspection({ projectId }) {
                     e.preventDefault();
                     const formData = new FormData(e.target);
                     try {
-                        const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/quality-inspections/`, {
+                        const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/quality_inspections/`, {
                             project_id: projectId,
                             inspector: formData.get('inspector'),
                             category: formData.get('category'),

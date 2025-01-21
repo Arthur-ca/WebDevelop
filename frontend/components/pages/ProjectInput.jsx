@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import { ProjectContext } from '../../components/ProjectContext';
 
-function ProjectInput({ onProjectSelect }) {
+function ProjectInput() {
+    const { projects, setProjects, addProject, setSelectedProject } = useContext(ProjectContext);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -51,7 +52,7 @@ function ProjectInput({ onProjectSelect }) {
             console.log('Submitting project data:', projectData);
             const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/projects/`, projectData);
 
-            setProjects([...projects, response.data]);
+            addProject(response.data);
             setError(null);
             handleCloseModal();
         } catch (err) {
@@ -101,7 +102,7 @@ function ProjectInput({ onProjectSelect }) {
                         {projects.map((project) => (
                             <tr
                                 key={project.id}
-                                onClick={() => onProjectSelect?.(project.id)}
+                                onClick={() => setSelectedProject(project)}
                                 style={{ cursor: 'pointer' }}
                             >
                                 <td>{project.id}</td>
