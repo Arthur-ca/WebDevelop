@@ -3,7 +3,7 @@ import TaskList from './pages/TaskList';
 import HomeContent from './pages/Home'
 import QualityInspection from './pages/QualityInspection'
 import ProjectInput from './pages/ProjectInput'
-import QualityReport from './pages/QualityRßeport'
+import QualityReport from './pages/QualityReport'
 import StaffInput from './pages/StaffInput'
 
 function ProjectTable({ selectedMenu }) {
