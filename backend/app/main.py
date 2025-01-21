@@ -1,0 +1,116 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from typing import List, Optional
+
+# Import database components and models
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from typing import List, Optional
+
+app = FastAPI()
+
+# Disable CORS. Do not remove this for full-stack development.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
+
+from app.database import Base, engine, get_db
+from app.models import Project, Task, QualityInspection
+from app.db_init import init_db
+
+from app.schemas import (
+    Project as ProjectSchema,
+    ProjectCreate,
+    ProjectWithRelations,
+    Task as TaskSchema,
+    TaskCreate,
+    QualityInspection as QualityInspectionSchema,
+    QualityInspectionCreate
+)
+
+app = FastAPI()
+
+# Disable CORS. Do not remove this for full-stack development.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
+
+# Create database tables before app starts
+Base.metadata.create_all(bind=engine)
+
+# Health check endpoint
+@app.get("/healthz")
+async def healthz():
+    return {"status": "ok"}
+
+# Project endpoints
+@app.post("/projects/", response_model=ProjectSchema)
+def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
+    db_project = Project(**project.model_dump())
+    db.add(db_project)
+    db.commit()
+    db.refresh(db_project)
+    return db_project
+
+@app.get("/projects/", response_model=List[ProjectSchema])
+def list_projects(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return db.query(Project).offset(skip).limit(limit).all()
+
+@app.get("/projects/{project_id}", response_model=ProjectWithRelations)
+def get_project(project_id: int, db: Session = Depends(get_db)):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return project
+
+# Task endpoints
+@app.post("/tasks/", response_model=TaskSchema)
+def create_task(task: TaskCreate, db: Session = Depends(get_db)):
+    project = db.query(Project).filter(Project.id == task.project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    db_task = Task(**task.model_dump())
+    db.add(db_task)
+    db.commit()
+    db.refresh(db_task)
+    return db_task
+
+@app.get("/tasks/", response_model=List[TaskSchema])
+def list_tasks(project_id: Optional[int] = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    query = db.query(Task)
+    if project_id:
+        query = query.filter(Task.project_id == project_id)
+    return query.offset(skip).limit(limit).all()
+
+# Quality Inspection endpoints
+@app.post("/quality-inspections/", response_model=QualityInspectionSchema)
+def create_quality_inspection(inspection: QualityInspectionCreate, db: Session = Depends(get_db)):
+    project = db.query(Project).filter(Project.id == inspection.project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    db_inspection = QualityInspection(**inspection.model_dump())
+    db.add(db_inspection)
+    db.commit()
+    db.refresh(db_inspection)
+    return db_inspection
+
+@app.get("/quality-inspections/", response_model=List[QualityInspectionSchema])
+def list_quality_inspections(project_id: Optional[int] = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    query = db.query(QualityInspection)
+    if project_id:
+        query = query.filter(QualityInspection.project_id == project_id)
+    return query.offset(skip).limit(limit).all()
