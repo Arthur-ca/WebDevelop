@@ -7,6 +7,7 @@ function Sidebar({ userRole, onMenuClick }) {
         { key: 'home', label: '首页', visibleFor: ['inspector', 'admin', 'mechanics'] },
         { key: 'quality-inspection', label: '质量检测', visibleFor: ['mechanics', 'inspector'] },
         { key: 'project-input', label: '项目录入', visibleFor: ['admin'] },
+        { key: 'task-list', label: '任务管理', visibleFor: ['admin', 'mechanics'] },
         { key: 'quality-report', label: '质量报告生成', visibleFor: ['inspector', 'admin'] },
         { key: 'staff-input', label: '人员录入', visibleFor: ['admin'] },
     ]

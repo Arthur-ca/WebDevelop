@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-function ProjectInput() {
+function ProjectInput({ onProjectSelect }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -15,7 +15,7 @@ function ProjectInput() {
                 setError(null);
             } catch (err) {
                 console.error("Error fetching projects:", err);
-                setError("Failed to load projects. Please try again later.");
+                setError("加载项目失败，请稍后重试。");
             } finally {
                 setLoading(false);
             }
@@ -28,19 +28,35 @@ function ProjectInput() {
     const handleCloseModal = () => setIsModalOpen(false);
     const handleSubmitProject = async (newProject) => {
         try {
-            const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/projects/`, {
+            // Format and validate dates
+            const createDate = new Date(newProject.createTime);
+            const endDate = new Date(newProject.projectTime);
+
+            // Validate dates
+            if (isNaN(createDate.getTime()) || isNaN(endDate.getTime())) {
+                setError("日期格式无效，请检查输入。");
+                return;
+            }
+
+            const projectData = {
                 name: newProject.name,
-                description: `Customer: ${newProject.customer}\nType: ${newProject.type}\nManager: ${newProject.manager}`,
+                customer: newProject.customer,
+                type: newProject.type,
+                manager: newProject.manager,
+                description: "",  // Empty string as we now store these fields separately
                 status: newProject.status || '运行中',
-                end_date: newProject.projectTime
-            });
-            
+                start_date: createDate.toISOString(),
+                end_date: endDate.toISOString()
+            };
+            console.log('Submitting project data:', projectData);
+            const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/projects/`, projectData);
+
             setProjects([...projects, response.data]);
             setError(null);
             handleCloseModal();
         } catch (err) {
             console.error("Error creating project:", err);
-            setError("Failed to create project. Please try again later.");
+            setError("创建项目失败，请稍后重试。");
         }
     };
 
@@ -77,16 +93,20 @@ function ProjectInput() {
                             <th>状态</th>
                             <th>进度</th>
                             <th>创建时间</th>
-                            <th>项目工程</th>
+                            <th>截止日期</th>
                             <th>负责人</th>
                         </tr>
                     </thead>
                     <tbody>
                         {projects.map((project) => (
-                            <tr key={project.id}>
+                            <tr
+                                key={project.id}
+                                onClick={() => onProjectSelect?.(project.id)}
+                                style={{ cursor: 'pointer' }}
+                            >
                                 <td>{project.id}</td>
                                 <td>{project.name}</td>
-                                <td>{project.description}</td>
+                                <td>{project.customer || '-'}</td>
                                 <td>{project.type || '-'}</td>
                                 <td>{project.quantity || '-'}</td>
                                 <td>{project.status}</td>
@@ -104,6 +124,7 @@ function ProjectInput() {
 }
 
 function ProjectInputModal({ onClose, onSubmit }) {
+    const today = new Date().toISOString().split('T')[0];
     const [formData, setFormData] = useState({
         id: '',
         name: '',
@@ -112,14 +133,22 @@ function ProjectInputModal({ onClose, onSubmit }) {
         quantity: '',
         status: '运行中',
         progress: '0%',
-        createTime: '',
-        projectTime: '',
+        createTime: today,
+        projectTime: today,
         manager: '',
     });
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
+        // Ensure dates are properly formatted
+        if (name === 'createTime' || name === 'projectTime') {
+            const date = new Date(value);
+            if (!isNaN(date.getTime())) {
+                setFormData({ ...formData, [name]: value });
+            }
+        } else {
+            setFormData({ ...formData, [name]: value });
+        }
     };
 
     const handleSubmit = (e) => {

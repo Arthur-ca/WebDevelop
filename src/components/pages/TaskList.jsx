@@ -116,7 +116,7 @@ function TaskList({ projectId }) {
 
             <div style={{ display: 'grid', gap: '1rem' }}>
                 {tasks.map((task) => (
-                    <div key={task.id} style={{ 
+                    <div key={task.id} style={{
                         backgroundColor: '#fff',
                         padding: '1rem',
                         borderRadius: '8px',
@@ -127,11 +127,11 @@ function TaskList({ projectId }) {
                             <span style={{
                                 padding: '0.25rem 0.5rem',
                                 borderRadius: '4px',
-                                backgroundColor: task.status === 'completed' ? '#e6ffe6' : 
-                                               task.status === 'in_progress' ? '#fff3e6' : '#ffe6e6'
+                                backgroundColor: task.status === 'completed' ? '#e6ffe6' :
+                                    task.status === 'in_progress' ? '#fff3e6' : '#ffe6e6'
                             }}>
                                 {task.status === 'completed' ? '已完成' :
-                                 task.status === 'in_progress' ? '进行中' : '待处理'}
+                                    task.status === 'in_progress' ? '进行中' : '待处理'}
                             </span>
                         </div>
                         <p>{task.description}</p>
