@@ -41,6 +41,21 @@
             <span class="label">结束时间:</span>
             <span>{{ formatDate(currentProject?.end_date) }}</span>
           </div>
+          <div class="info-item">
+            <span class="label">零件数量:</span>
+            <span>{{ currentProject?.parts_quantity }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">零件编号:</span>
+            <el-select v-model="form.part_number" placeholder="请选择零件编号" style="width: 120px">
+              <el-option
+                v-for="i in currentProject?.parts_quantity"
+                :key="i"
+                :label="`#${String(i).padStart(3, '0')}`"
+                :value="i"
+              />
+            </el-select>
+          </div>
           <el-tag :type="getStatusType(currentProject?.status)" class="status-tag">
             {{ currentProject?.status }}
           </el-tag>
@@ -52,62 +67,97 @@
         <div class="left-section">
           <!-- 工程图纸 -->
           <div class="blueprint-section">
-            <div class="section-header">
-              <h3>工程图纸</h3>
-            </div>
-            <div class="blueprint-content">
-              <img :src="currentProject?.blueprint_url" alt="工程图纸" class="blueprint-image" />
-            </div>
-          </div>
-
-          <!-- 检测信息表单 -->
-          <div class="inspection-form">
-            <div class="section-header">
-              <h3>检测信息</h3>
-            </div>
-            <el-form
-              ref="formRef"
-              :model="form"
-              :rules="rules"
-              label-width="100px"
-              class="inspection-form-content"
-            >
-              <el-form-item label="检测员" prop="inspector">
-                <el-input v-model="form.inspector" placeholder="请输入检测员姓名" />
-              </el-form-item>
-              
-              <el-form-item label="检测类型" prop="category">
-                <el-select v-model="form.category" placeholder="请选择检测类型" class="w-100">
-                  <el-option label="尺寸检测" value="dimension" />
-                  <el-option label="材料检测" value="material" />
-                  <el-option label="外观检测" value="appearance" />
-                </el-select>
-              </el-form-item>
-
-              <el-form-item label="检测结果" prop="result">
-                <el-select v-model="form.result" placeholder="请选择检测结果" class="w-100">
-                  <el-option label="合格" value="pass" />
-                  <el-option label="不合格" value="fail" />
-                </el-select>
-              </el-form-item>
-
-              <el-form-item label="测量值" prop="measurement">
-                <div class="measurement-input">
-                  <el-input v-model="form.measurement" placeholder="请输入测量值">
-                    <template #append>mm</template>
-                  </el-input>
+                <div class="section-header">
+                  <h3>工程图纸</h3>
                 </div>
-              </el-form-item>
-
-              <el-form-item>
-                <el-button type="primary" @click="submitForm" class="submit-btn">
-                  提交检测记录
-                </el-button>
-              </el-form-item>
-            </el-form>
+                <div class="blueprint-content">
+                  <img src="/images/spool.jpg" alt="工程图纸" class="blueprint-image" />
+                </div>
+              </div>
+            
+                  <!-- 检测信息表单 -->
+        <div class="inspection-form">
+          <div class="section-header">
+            <h3>检测信息</h3>
+            <div v-if="existingInspection" class="existing-inspection-notice">
+              <el-alert
+                title="该零件已经被检测过"
+                type="info"
+                :closable="false"
+                show-icon
+              />
+            </div>
           </div>
+          <el-form
+            ref="formRef"
+            :model="form"
+            :rules="rules"
+            label-width="100px"
+            class="inspection-form-content"
+          >
+            <el-form-item label="检测员" prop="inspector">
+              <el-input 
+                v-model="form.inspector" 
+                placeholder="请输入检测员姓名"
+                :disabled="existingInspection"
+                :class="{ 'input-disabled': existingInspection }"
+              />
+            </el-form-item>
+
+            <el-form-item label="检测类型" prop="category">
+              <el-select 
+                v-model="form.category" 
+                placeholder="请选择检测类型" 
+                class="w-100"
+                :disabled="existingInspection"
+                :class="{ 'input-disabled': existingInspection }"
+              >
+                <el-option label="圆周度" value="dimension" />
+                <el-option label="外圆直径A" value="external_diameter_a" />
+                <el-option label="外圆直径B" value="external_diameter_b" />
+              </el-select>
+            </el-form-item>
+          
+            <el-form-item label="检测结果" prop="result">
+              <el-select 
+                v-model="form.result" 
+                placeholder="请选择检测结果" 
+                class="w-100"
+                :disabled="existingInspection"
+                :class="{ 'input-disabled': existingInspection }"
+              >
+                <el-option label="合格" value="pass" />
+                <el-option label="不合格" value="fail" />
+              </el-select>
+            </el-form-item>
+          
+            <el-form-item label="测量值" prop="measurement">
+              <div class="measurement-input">
+                <el-input 
+                  v-model="form.measurement" 
+                  placeholder="请输入测量值"
+                  :disabled="existingInspection"
+                  :class="{ 'input-disabled': existingInspection }"
+                >
+                  <template #append>mm</template>
+                </el-input>
+              </div>
+            </el-form-item>
+          
+            <el-form-item>
+              <el-button 
+                type="primary" 
+                @click="submitForm" 
+                class="submit-btn"
+                :disabled="existingInspection"
+              >
+                提交检测记录
+              </el-button>
+            </el-form-item>
+          </el-form>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </template>
@@ -124,21 +174,23 @@ const searchQuery = ref('')
 const currentProject = ref(null)
 const projects = ref([])
 const inspectionRecords = ref([])
+const existingInspection = ref(null)
 const formRef = ref(null)
 
 const form = ref({
   inspector: '',
   category: '',
   result: '',
-  measurement: null,
-  notes: '',
-  is_critical: false
+  measurement: '',
+  part_number: null
 })
 
 const rules = {
   inspector: [{ required: true, message: '请输入检测员姓名', trigger: 'blur' }],
   category: [{ required: true, message: '请选择检测类型', trigger: 'change' }],
-  result: [{ required: true, message: '请选择检测结果', trigger: 'change' }]
+  result: [{ required: true, message: '请选择检测结果', trigger: 'change' }],
+  measurement: [{ required: true, message: '请输入测量值', trigger: 'blur' }],
+  part_number: [{ required: true, message: '请选择零件编号', trigger: 'change' }]
 }
 
 // 获取项目列表
@@ -211,9 +263,8 @@ const resetForm = () => {
     inspector: '',
     category: '',
     result: '',
-    measurement: null,
-    notes: '',
-    is_critical: false
+    measurement: '',
+    part_number: null
   }
 }
 

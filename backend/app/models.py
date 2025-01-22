@@ -15,6 +15,7 @@ class Project(Base):
     start_date = Column(Date, default=date.today)
     end_date = Column(Date, nullable=True)
     status = Column(String)  # 'planning', 'in_progress', 'completed', 'on_hold'
+    parts_quantity = Column(Integer, nullable=True)  # 零件数量
     
     tasks = relationship("Task", back_populates="project")
     quality_inspections = relationship("QualityInspection", back_populates="project")
@@ -40,10 +41,9 @@ class QualityInspection(Base):
     project_id = Column(Integer, ForeignKey("projects.id"))
     inspection_date = Column(Date, default=date.today)
     inspector = Column(String)
-    category = Column(String)  # 'material', 'process', 'final_product'
-    result = Column(String)  # 'pass', 'fail', 'needs_review'
-    notes = Column(String)
-    measurements = Column(Float, nullable=True)
-    is_critical = Column(Boolean, default=False)
+    category = Column(String)  # 'dimension', 'external_diameter_a', 'external_diameter_b'
+    result = Column(String)    # 'pass', 'fail'
+    measurement = Column(Float, nullable=True)
+    part_number = Column(Integer, nullable=True)  # 零件编号
     
     project = relationship("Project", back_populates="quality_inspections")

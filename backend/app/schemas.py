@@ -11,6 +11,7 @@ class ProjectBase(BaseModel):
     description: Optional[str] = None
     status: str
     end_date: Optional[date] = None
+    parts_quantity: Optional[int] = None  # 零件数量
 
 class ProjectCreate(ProjectBase):
     pass
@@ -44,11 +45,10 @@ class Task(TaskBase):
 # Quality Inspection Schemas
 class QualityInspectionBase(BaseModel):
     inspector: str
-    category: str
-    result: str
-    notes: Optional[str] = None
-    measurements: Optional[float] = None
-    is_critical: bool = False
+    category: str  # 'dimension', 'external_diameter_a', 'external_diameter_b'
+    result: str    # 'pass', 'fail'
+    measurement: Optional[float] = None
+    part_number: Optional[int] = None
 
 class QualityInspectionCreate(QualityInspectionBase):
     project_id: int

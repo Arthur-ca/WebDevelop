@@ -17,7 +17,7 @@
       <el-table-column prop="name" label="项目名称" width="150" />
       <el-table-column prop="customer" label="客户名称" width="150" />
       <el-table-column prop="type" label="项目类型" width="120" />
-      <el-table-column prop="parts_count" label="零件数量" width="100" />
+      <el-table-column prop="parts_quantity" label="零件数量" width="100" />
       <el-table-column prop="status" label="状态" width="100">
         <template #default="{ row }">
           <el-tag :type="getStatusType(row.status)">{{ row.status }}</el-tag>
@@ -62,13 +62,15 @@
         </el-form-item>
         <el-form-item label="项目类型" prop="type">
           <el-select v-model="form.type" placeholder="请选择项目类型">
+            <el-option label="加工" value="加工" />
             <el-option label="维修" value="维修" />
-            <el-option label="保养" value="保养" />
-            <el-option label="改造" value="改造" />
           </el-select>
         </el-form-item>
         <el-form-item label="负责人" prop="manager">
-          <el-input v-model="form.manager" />
+          <el-input v-model="form.manager" placeholder="请输入负责人姓名" />
+        </el-form-item>
+        <el-form-item label="零件数量" prop="parts_quantity">
+          <el-input-number v-model="form.parts_quantity" :min="1" placeholder="请输入零件数量" />
         </el-form-item>
         <el-form-item label="创建时间" prop="start_date">
           <el-date-picker
@@ -114,6 +116,7 @@ const form = ref({
   customer: '',
   type: '',
   manager: '',
+  parts_quantity: 1,
   start_date: '',
   end_date: '',
   status: '运行中'
@@ -124,6 +127,7 @@ const rules = {
   customer: [{ required: true, message: '请输入客户名称', trigger: 'blur' }],
   type: [{ required: true, message: '请选择项目类型', trigger: 'change' }],
   manager: [{ required: true, message: '请输入负责人', trigger: 'blur' }],
+  parts_quantity: [{ required: true, message: '请输入零件数量', trigger: 'blur' }],
   start_date: [{ required: true, message: '请选择创建时间', trigger: 'change' }],
   end_date: [{ required: true, message: '请选择截止日期', trigger: 'change' }]
 }
@@ -175,6 +179,7 @@ const resetForm = () => {
     customer: '',
     type: '',
     manager: '',
+    parts_quantity: 1,
     start_date: '',
     end_date: '',
     status: '运行中'
