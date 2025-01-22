@@ -73,15 +73,17 @@
         <el-form-item label="创建时间" prop="start_date">
           <el-date-picker
             v-model="form.start_date"
-            type="datetime"
+            type="date"
             placeholder="选择创建时间"
+            value-format="YYYY-MM-DD"
           />
         </el-form-item>
         <el-form-item label="截止日期" prop="end_date">
           <el-date-picker
             v-model="form.end_date"
-            type="datetime"
+            type="date"
             placeholder="选择截止日期"
+            value-format="YYYY-MM-DD"
           />
         </el-form-item>
       </el-form>
@@ -188,7 +190,13 @@ const handleClose = (done) => {
 // 格式化日期
 const formatDate = (date) => {
   if (!date) return ''
-  return new Date(date).toLocaleString('zh-CN')
+  if (typeof date === 'string') {
+    // 如果已经是YYYY-MM-DD格式，直接返回
+    if (date.length === 10) return date
+  }
+  // 转换为YYYY-MM-DD格式
+  const d = new Date(date)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 // 获取状态标签类型

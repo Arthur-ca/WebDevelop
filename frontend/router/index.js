@@ -20,13 +20,13 @@ const router = createRouter({
       path: '/quality-inspection',
       name: 'quality-inspection',
       component: () => import('../views/QualityInspection.vue'),
-      meta: { requiresAuth: true, roles: ['admin', 'inspector'] }
+      meta: { requiresAuth: true, roles: ['admin', 'inspector', 'mechanics'] }
     },
     {
       path: '/quality-report',
       name: 'quality-report',
       component: () => import('../views/QualityReport.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, roles: ['admin', 'inspector'] }
     },
     {
       path: '/staff-input',
@@ -46,7 +46,7 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
-  
+
   if (to.meta.requiresAuth) {
     if (to.meta.roles && !to.meta.roles.includes(userStore.role)) {
       next({ name: 'home' })

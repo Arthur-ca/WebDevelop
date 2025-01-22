@@ -22,14 +22,17 @@
     </el-menu-item>
     
     <el-menu-item 
-      v-if="['admin', 'inspector'].includes(userStore.role)"
+      v-if="['admin', 'inspector', 'mechanics'].includes(userStore.role)"
       index="/quality-inspection"
     >
       <el-icon><Check /></el-icon>
-      <template #title>质量检查</template>
+      <template #title>质量检测</template>
     </el-menu-item>
     
-    <el-menu-item index="/quality-report">
+    <el-menu-item 
+      v-if="['admin', 'inspector'].includes(userStore.role)"
+      index="/quality-report"
+    >
       <el-icon><DataLine /></el-icon>
       <template #title>质量报告</template>
     </el-menu-item>

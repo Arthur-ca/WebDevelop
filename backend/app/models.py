@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import date
 from .database import Base
 
 class Project(Base):
@@ -12,8 +12,8 @@ class Project(Base):
     type = Column(String, nullable=True)      # 项目类型
     manager = Column(String, nullable=True)   # 负责人
     description = Column(String, nullable=True)
-    start_date = Column(DateTime, default=datetime.utcnow)
-    end_date = Column(DateTime, nullable=True)
+    start_date = Column(Date, default=date.today)
+    end_date = Column(Date, nullable=True)
     status = Column(String)  # 'planning', 'in_progress', 'completed', 'on_hold'
     
     tasks = relationship("Task", back_populates="project")
@@ -29,7 +29,7 @@ class Task(Base):
     status = Column(String)  # 'todo', 'in_progress', 'completed'
     priority = Column(Integer)  # 1 (highest) to 5 (lowest)
     assigned_to = Column(String)
-    due_date = Column(DateTime, nullable=True)
+    due_date = Column(Date, nullable=True)
     
     project = relationship("Project", back_populates="tasks")
 
@@ -38,7 +38,7 @@ class QualityInspection(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     project_id = Column(Integer, ForeignKey("projects.id"))
-    inspection_date = Column(DateTime, default=datetime.utcnow)
+    inspection_date = Column(Date, default=date.today)
     inspector = Column(String)
     category = Column(String)  # 'material', 'process', 'final_product'
     result = Column(String)  # 'pass', 'fail', 'needs_review'
