@@ -98,9 +98,35 @@ def create_quality_inspection(inspection: QualityInspectionCreate, db: Session =
     db.refresh(db_inspection)
     return db_inspection
 
+@app.put("/quality_inspections/{inspection_id}", response_model=QualityInspectionSchema)
+def update_quality_inspection(
+    inspection_id: int,
+    inspection: QualityInspectionCreate,
+    db: Session = Depends(get_db)
+):
+    db_inspection = db.query(QualityInspection).filter(QualityInspection.id == inspection_id).first()
+    if not db_inspection:
+        raise HTTPException(status_code=404, detail="Quality inspection not found")
+    
+    # 更新记录的所有字段
+    for key, value in inspection.model_dump().items():
+        setattr(db_inspection, key, value)
+    
+    db.commit()
+    db.refresh(db_inspection)
+    return db_inspection
+
 @app.get("/quality_inspections/", response_model=List[QualityInspectionSchema])
-def list_quality_inspections(project_id: Optional[int] = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def list_quality_inspections(
+    project_id: Optional[int] = None, 
+    part_number: Optional[int] = None,
+    skip: int = 0, 
+    limit: int = 100, 
+    db: Session = Depends(get_db)
+):
     query = db.query(QualityInspection)
     if project_id:
         query = query.filter(QualityInspection.project_id == project_id)
+    if part_number:
+        query = query.filter(QualityInspection.part_number == part_number)
     return query.offset(skip).limit(limit).all()
