@@ -92,7 +92,32 @@ def create_quality_inspection(inspection: QualityInspectionCreate, db: Session =
     project = db.query(Project).filter(Project.id == inspection.project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    db_inspection = QualityInspection(**inspection.model_dump())
+    
+    # 计算圆度和圆柱度
+    roundness_a = abs(inspection.diameter_a1 - inspection.diameter_a2)
+    roundness_b = abs(inspection.diameter_b1 - inspection.diameter_b2)
+    cylindricity = max(
+        abs(inspection.diameter_a1 - inspection.diameter_b1),
+        abs(inspection.diameter_a1 - inspection.diameter_b2),
+        abs(inspection.diameter_a2 - inspection.diameter_b1),
+        abs(inspection.diameter_a2 - inspection.diameter_b2)
+    )
+    
+    # 创建新的质检记录
+    db_inspection = QualityInspection(
+        project_id=inspection.project_id,
+        inspector=inspection.inspector,
+        part_number=inspection.part_number,
+        diameter_a1=inspection.diameter_a1,
+        diameter_a2=inspection.diameter_a2,
+        diameter_b1=inspection.diameter_b1,
+        diameter_b2=inspection.diameter_b2,
+        roundness_a=roundness_a,
+        roundness_b=roundness_b,
+        cylindricity=cylindricity,
+        result=inspection.result
+    )
+    
     db.add(db_inspection)
     db.commit()
     db.refresh(db_inspection)
@@ -108,9 +133,27 @@ def update_quality_inspection(
     if not db_inspection:
         raise HTTPException(status_code=404, detail="Quality inspection not found")
     
-    # 更新记录的所有字段
-    for key, value in inspection.model_dump().items():
-        setattr(db_inspection, key, value)
+    # 计算圆度和圆柱度
+    roundness_a = abs(inspection.diameter_a1 - inspection.diameter_a2)
+    roundness_b = abs(inspection.diameter_b1 - inspection.diameter_b2)
+    cylindricity = max(
+        abs(inspection.diameter_a1 - inspection.diameter_b1),
+        abs(inspection.diameter_a1 - inspection.diameter_b2),
+        abs(inspection.diameter_a2 - inspection.diameter_b1),
+        abs(inspection.diameter_a2 - inspection.diameter_b2)
+    )
+    
+    # 更新所有字段
+    db_inspection.inspector = inspection.inspector
+    db_inspection.part_number = inspection.part_number
+    db_inspection.diameter_a1 = inspection.diameter_a1
+    db_inspection.diameter_a2 = inspection.diameter_a2
+    db_inspection.diameter_b1 = inspection.diameter_b1
+    db_inspection.diameter_b2 = inspection.diameter_b2
+    db_inspection.roundness_a = roundness_a
+    db_inspection.roundness_b = roundness_b
+    db_inspection.cylindricity = cylindricity
+    db_inspection.result = inspection.result
     
     db.commit()
     db.refresh(db_inspection)

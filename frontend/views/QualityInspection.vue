@@ -104,18 +104,81 @@
               />
             </el-form-item>
 
-            <el-form-item label="检测类型" prop="category">
-              <el-select 
-                v-model="form.category" 
-                placeholder="请选择检测类型" 
-                class="w-100"
+            <el-form-item label="外圆直径A1" prop="diameterA1">
+              <el-input 
+                v-model="form.diameterA1" 
+                placeholder="外圆直径A1"
                 :disabled="!form.part_number || (existingInspection && !isAdmin)"
                 :class="{ 'input-disabled': !form.part_number || (existingInspection && !isAdmin) }"
               >
-                <el-option label="圆周度" value="dimension" />
-                <el-option label="外圆直径A" value="external_diameter_a" />
-                <el-option label="外圆直径B" value="external_diameter_b" />
-              </el-select>
+                <template #append>mm</template>
+              </el-input>
+            </el-form-item>
+
+            <el-form-item label="外圆直径A2" prop="diameterA2">
+              <el-input 
+                v-model="form.diameterA2" 
+                placeholder="外圆直径A2"
+                :disabled="!form.part_number || (existingInspection && !isAdmin)"
+                :class="{ 'input-disabled': !form.part_number || (existingInspection && !isAdmin) }"
+              >
+                <template #append>mm</template>
+              </el-input>
+            </el-form-item>
+
+            <el-form-item label="外圆圆度A">
+              <el-input 
+                v-model="roundnessA"
+                placeholder="自动计算"
+                disabled
+                class="input-disabled"
+              >
+                <template #append>mm</template>
+              </el-input>
+            </el-form-item>
+
+            <el-form-item label="外圆直径B1" prop="diameterB1">
+              <el-input 
+                v-model="form.diameterB1" 
+                placeholder="外圆直径B1"
+                :disabled="!form.part_number || (existingInspection && !isAdmin)"
+                :class="{ 'input-disabled': !form.part_number || (existingInspection && !isAdmin) }"
+              >
+                <template #append>mm</template>
+              </el-input>
+            </el-form-item>
+
+            <el-form-item label="外圆直径B2" prop="diameterB2">
+              <el-input 
+                v-model="form.diameterB2" 
+                placeholder="外圆直径B2"
+                :disabled="!form.part_number || (existingInspection && !isAdmin)"
+                :class="{ 'input-disabled': !form.part_number || (existingInspection && !isAdmin) }"
+              >
+                <template #append>mm</template>
+              </el-input>
+            </el-form-item>
+
+            <el-form-item label="外圆圆度B">
+              <el-input 
+                v-model="roundnessB"
+                placeholder="自动计算"
+                disabled
+                class="input-disabled"
+              >
+                <template #append>mm</template>
+              </el-input>
+            </el-form-item>
+
+            <el-form-item label="圆柱度">
+              <el-input 
+                v-model="cylindricity"
+                placeholder="自动计算"
+                disabled
+                class="input-disabled"
+              >
+                <template #append>mm</template>
+              </el-input>
             </el-form-item>
           
             <el-form-item label="检测结果" prop="result">
@@ -129,19 +192,6 @@
                 <el-option label="合格" value="pass" />
                 <el-option label="不合格" value="fail" />
               </el-select>
-            </el-form-item>
-          
-            <el-form-item label="测量值" prop="measurement">
-              <div class="measurement-input">
-                <el-input 
-                  v-model="form.measurement" 
-                  placeholder="请输入测量值"
-                  :disabled="!form.part_number || (existingInspection && !isAdmin)"
-                  :class="{ 'input-disabled': !form.part_number || (existingInspection && !isAdmin) }"
-                >
-                  <template #append>mm</template>
-                </el-input>
-              </div>
             </el-form-item>
           
             <el-form-item>
@@ -182,17 +232,78 @@ const isAdmin = computed(() => userStore.role === 'admin')
 
 const form = ref({
   inspector: '',
-  category: '',
+  diameterA1: '',
+  diameterA2: '',
+  diameterB1: '',
+  diameterB2: '',
+  roundnessA: '',
+  roundnessB: '',
+  cylindricity: '',
   result: '',
-  measurement: '',
   part_number: null
+})
+
+// 计算外圆圆度A
+const roundnessA = computed(() => {
+  if (form.value.diameterA1 && form.value.diameterA2) {
+    const diff = Math.abs(parseFloat(form.value.diameterA1) - parseFloat(form.value.diameterA2))
+    form.value.roundnessA = diff.toFixed(3)
+    return diff.toFixed(3)
+  }
+  form.value.roundnessA = ''
+  return ''
+})
+
+// 计算外圆圆度B
+const roundnessB = computed(() => {
+  if (form.value.diameterB1 && form.value.diameterB2) {
+    const diff = Math.abs(parseFloat(form.value.diameterB1) - parseFloat(form.value.diameterB2))
+    form.value.roundnessB = diff.toFixed(3)
+    return diff.toFixed(3)
+  }
+  form.value.roundnessB = ''
+  return ''
+})
+
+// 计算圆柱度
+const cylindricity = computed(() => {
+  if (form.value.diameterA1 && form.value.diameterA2 && form.value.diameterB1 && form.value.diameterB2) {
+    // 计算A端与B端所有可能的差值
+    const diffs = [
+      Math.abs(parseFloat(form.value.diameterA1) - parseFloat(form.value.diameterB1)),
+      Math.abs(parseFloat(form.value.diameterA1) - parseFloat(form.value.diameterB2)),
+      Math.abs(parseFloat(form.value.diameterA2) - parseFloat(form.value.diameterB1)),
+      Math.abs(parseFloat(form.value.diameterA2) - parseFloat(form.value.diameterB2))
+    ]
+    // 获取最大差值
+    const maxDiff = Math.max(...diffs)
+    form.value.cylindricity = maxDiff.toFixed(3)
+    return maxDiff.toFixed(3)
+  }
+  form.value.cylindricity = ''
+  return ''
+})
+
+// 监听直径值的变化
+watch([
+  () => form.value.diameterA1,
+  () => form.value.diameterA2,
+  () => form.value.diameterB1,
+  () => form.value.diameterB2
+], () => {
+  // 当任何直径值变化时，重新计算圆度和圆柱度
+  roundnessA.value
+  roundnessB.value
+  cylindricity.value
 })
 
 const rules = {
   inspector: [{ required: true, message: '请输入检测员姓名', trigger: 'blur' }],
-  category: [{ required: true, message: '请选择检测类型', trigger: 'change' }],
+  diameterA1: [{ required: true, message: '请输入外圆直径A1', trigger: 'blur' }],
+  diameterA2: [{ required: true, message: '请输入外圆直径A2', trigger: 'blur' }],
+  diameterB1: [{ required: true, message: '请输入外圆直径B1', trigger: 'blur' }],
+  diameterB2: [{ required: true, message: '请输入外圆直径B2', trigger: 'blur' }],
   result: [{ required: true, message: '请选择检测结果', trigger: 'change' }],
-  measurement: [{ required: true, message: '请输入测量值', trigger: 'blur' }],
   part_number: [{ required: true, message: '请选择零件编号', trigger: 'change' }]
 }
 
@@ -214,15 +325,16 @@ const checkExistingInspection = async (projectId, partNumber) => {
     })
     if (response.data && response.data.length > 0) {
       const record = response.data[0]
-      // 如果存在记录，设置existingInspection，但管理员可以编辑
       existingInspection.value = record
       // 填充表单数据
       form.value = {
         ...form.value,
         inspector: record.inspector,
-        category: record.category,
-        result: record.result,
-        measurement: record.measurement
+        diameterA1: record.diameterA1,
+        diameterA2: record.diameterA2,
+        diameterB1: record.diameterB1,
+        diameterB2: record.diameterB2,
+        result: record.result
       }
       
       // 根据角色显示不同的消息
@@ -294,9 +406,14 @@ const submitForm = async () => {
 const resetForm = () => {
   form.value = {
     inspector: '',
-    category: '',
+    diameterA1: '',
+    diameterA2: '',
+    diameterB1: '',
+    diameterB2: '',
+    roundnessA: '',
+    roundnessB: '',
+    cylindricity: '',
     result: '',
-    measurement: '',
     part_number: null
   }
 }

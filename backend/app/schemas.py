@@ -45,10 +45,15 @@ class Task(TaskBase):
 # Quality Inspection Schemas
 class QualityInspectionBase(BaseModel):
     inspector: str
-    category: str  # 'dimension', 'external_diameter_a', 'external_diameter_b'
+    part_number: int
+    diameter_a1: float
+    diameter_a2: float
+    diameter_b1: float
+    diameter_b2: float
     result: str    # 'pass', 'fail'
-    measurement: Optional[float] = None
-    part_number: Optional[int] = None
+    roundness_a: Optional[float] = None
+    roundness_b: Optional[float] = None
+    cylindricity: Optional[float] = None
 
 class QualityInspectionCreate(QualityInspectionBase):
     project_id: int

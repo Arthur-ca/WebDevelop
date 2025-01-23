@@ -41,9 +41,19 @@ class QualityInspection(Base):
     project_id = Column(Integer, ForeignKey("projects.id"))
     inspection_date = Column(Date, default=date.today)
     inspector = Column(String)
-    category = Column(String)  # 'dimension', 'external_diameter_a', 'external_diameter_b'
+    part_number = Column(Integer)  # 零件编号
+    
+    # 直径测量值
+    diameter_a1 = Column(Float)  # 外圆直径A1
+    diameter_a2 = Column(Float)  # 外圆直径A2
+    diameter_b1 = Column(Float)  # 外圆直径B1
+    diameter_b2 = Column(Float)  # 外圆直径B2
+    
+    # 计算值
+    roundness_a = Column(Float)  # 外圆圆度A
+    roundness_b = Column(Float)  # 外圆圆度B
+    cylindricity = Column(Float) # 圆柱度
+    
     result = Column(String)    # 'pass', 'fail'
-    measurement = Column(Float, nullable=True)
-    part_number = Column(Integer, nullable=True)  # 零件编号
     
     project = relationship("Project", back_populates="quality_inspections")
