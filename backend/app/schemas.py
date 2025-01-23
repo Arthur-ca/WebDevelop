@@ -1,6 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from datetime import date
 from typing import Optional, List
+from decimal import Decimal, ROUND_HALF_UP
 
 # Project Schemas
 class ProjectBase(BaseModel):
@@ -43,6 +44,11 @@ class Task(TaskBase):
         from_attributes = True
 
 # Quality Inspection Schemas
+def round_float(value: float) -> float:
+    if value is None:
+        return None
+    return float(Decimal(str(value)).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP))
+
 class QualityInspectionBase(BaseModel):
     inspector: str
     part_number: int
@@ -54,6 +60,14 @@ class QualityInspectionBase(BaseModel):
     roundness_a: Optional[float] = None
     roundness_b: Optional[float] = None
     cylindricity: Optional[float] = None
+
+    @validator('diameter_a1', 'diameter_a2', 'diameter_b1', 'diameter_b2',
+              'roundness_a', 'roundness_b', 'cylindricity', pre=True)
+    def round_floats(cls, v):
+        return round_float(v)
+
+    class Config:
+        from_attributes = True
 
 class QualityInspectionCreate(QualityInspectionBase):
     project_id: int

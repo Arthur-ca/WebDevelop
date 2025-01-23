@@ -1,7 +1,14 @@
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Boolean, event
 from sqlalchemy.orm import relationship
 from datetime import date
+from decimal import Decimal, ROUND_HALF_UP
 from .database import Base
+
+def round_decimal(number, places=4):
+    """Round a number to a specified number of decimal places"""
+    if number is None:
+        return None
+    return float(Decimal(str(number)).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP))
 
 class Project(Base):
     __tablename__ = "projects"
@@ -49,11 +56,31 @@ class QualityInspection(Base):
     diameter_b1 = Column(Float)  # 外圆直径B1
     diameter_b2 = Column(Float)  # 外圆直径B2
     
-    # 计算值
+    # 圆度和圆柱度
     roundness_a = Column(Float)  # 外圆圆度A
     roundness_b = Column(Float)  # 外圆圆度B
-    cylindricity = Column(Float) # 圆柱度
+    cylindricity = Column(Float)  # 圆柱度
     
-    result = Column(String)    # 'pass', 'fail'
+    result = Column(String)  # 'pass' or 'fail'
     
     project = relationship("Project", back_populates="quality_inspections")
+
+    def __init__(self, **kwargs):
+        # Round all float values before initialization
+        float_fields = ['diameter_a1', 'diameter_a2', 'diameter_b1', 'diameter_b2',
+                       'roundness_a', 'roundness_b', 'cylindricity']
+        for field in float_fields:
+            if field in kwargs:
+                kwargs[field] = round_decimal(kwargs[field])
+        super().__init__(**kwargs)
+
+@event.listens_for(QualityInspection, 'before_update')
+def round_floats_before_update(mapper, connection, target):
+    """Round float values before update"""
+    target.diameter_a1 = round_decimal(target.diameter_a1)
+    target.diameter_a2 = round_decimal(target.diameter_a2)
+    target.diameter_b1 = round_decimal(target.diameter_b1)
+    target.diameter_b2 = round_decimal(target.diameter_b2)
+    target.roundness_a = round_decimal(target.roundness_a)
+    target.roundness_b = round_decimal(target.roundness_b)
+    target.cylindricity = round_decimal(target.cylindricity)

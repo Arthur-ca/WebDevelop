@@ -3,12 +3,11 @@ from .models import Project, Task, QualityInspection
 import os
 
 def init_db():
-    print("Initializing database tables...")
+    print("Checking database...")
     try:
-        if not os.path.exists("app.db"):
-            Base.metadata.drop_all(bind=engine)  # Clear existing tables
-        Base.metadata.create_all(bind=engine)  # Create all tables fresh
-        print("Database tables created successfully!")
+        # 只在表不存在时创建表
+        Base.metadata.create_all(bind=engine, checkfirst=True)
+        print("Database check completed successfully!")
     except Exception as e:
-        print(f"Error creating database tables: {e}")
+        print(f"Error checking database: {e}")
         raise

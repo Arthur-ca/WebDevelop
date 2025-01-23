@@ -213,7 +213,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch, computed, nextTick, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
@@ -229,6 +229,24 @@ const inspectionRecords = ref([])
 const existingInspection = ref(null)
 const formRef = ref(null)
 const isAdmin = computed(() => userStore.role === 'admin')
+
+// 在组件卸载时清理
+onUnmounted(() => {
+  existingInspection.value = null
+  currentProject.value = null
+  form.value = {
+    inspector: '',
+    diameterA1: '',
+    diameterA2: '',
+    diameterB1: '',
+    diameterB2: '',
+    roundnessA: '',
+    roundnessB: '',
+    cylindricity: '',
+    result: '',
+    part_number: null
+  }
+})
 
 const form = ref({
   inspector: '',
@@ -285,17 +303,23 @@ const cylindricity = computed(() => {
 })
 
 // 监听直径值的变化
-watch([
-  () => form.value.diameterA1,
-  () => form.value.diameterA2,
-  () => form.value.diameterB1,
-  () => form.value.diameterB2
-], () => {
-  // 当任何直径值变化时，重新计算圆度和圆柱度
-  roundnessA.value
-  roundnessB.value
-  cylindricity.value
-})
+watch(
+  [
+    () => form.value?.diameterA1,
+    () => form.value?.diameterA2,
+    () => form.value?.diameterB1,
+    () => form.value?.diameterB2
+  ],
+  () => {
+    // 当任何直径值变化时，重新计算圆度和圆柱度
+    const rA = roundnessA.value
+    const rB = roundnessB.value
+    if (rA !== undefined) form.value.roundnessA = rA
+    if (rB !== undefined) form.value.roundnessB = rB
+    const c = cylindricity.value
+    if (c !== undefined) form.value.cylindricity = c
+  }
+)
 
 const rules = {
   inspector: [{ required: true, message: '请输入检测员姓名', trigger: 'blur' }],
@@ -307,35 +331,61 @@ const rules = {
   part_number: [{ required: true, message: '请选择零件编号', trigger: 'change' }]
 }
 
+// 格式化浮点数到4位小数
+const formatFloat = (value) => {
+  if (!value) return ''
+  return Number(parseFloat(value).toFixed(4)).toString()
+}
+
 // 监听零件编号变化
-watch(() => form.value.part_number, async (newValue) => {
-  if (newValue && currentProject.value) {
-    await checkExistingInspection(currentProject.value.id, newValue)
+watch(
+  () => form.value?.part_number,
+  (newValue, oldValue) => {
+    // 只在值真正改变时触发
+    if (newValue && newValue !== oldValue && currentProject.value) {
+      checkExistingInspection(currentProject.value.id, newValue)
+    }
   }
-})
+)
+
+// 清理检查记录
+const clearExistingInspection = () => {
+  nextTick(() => {
+    existingInspection.value = null
+    const currentPartNumber = form.value.part_number
+    resetForm()
+    form.value.part_number = currentPartNumber
+  })
+}
 
 // 检查是否存在质检记录
-const checkExistingInspection = async (projectId, partNumber) => {
-  try {
-    const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/quality_inspections/`, {
-      params: {
-        project_id: projectId,
-        part_number: partNumber
-      }
-    })
-    if (response.data && response.data.length > 0) {
-      const record = response.data[0]
-      existingInspection.value = record
-      // 填充表单数据
-      form.value = {
-        ...form.value,
-        inspector: record.inspector,
-        diameterA1: record.diameterA1,
-        diameterA2: record.diameterA2,
-        diameterB1: record.diameterB1,
-        diameterB2: record.diameterB2,
-        result: record.result
-      }
+const checkExistingInspection = (projectId, partNumber) => {
+  axios.get(`${import.meta.env.VITE_BACKEND_URL}/quality_inspections/`, {
+    params: {
+      project_id: projectId,
+      part_number: partNumber
+    }
+  })
+  .then(({ data: inspections }) => {
+    // 确保 inspections 是数组并且有数据
+    if (Array.isArray(inspections) && inspections.length > 0) {
+      const record = inspections[0]  // 获取第一条记录
+      nextTick(() => {
+        existingInspection.value = record
+        // 填充表单数据，转换字段名称从 snake_case 到 camelCase
+        form.value = {
+          inspector: record.inspector,
+          part_number: record.part_number,
+          diameterA1: formatFloat(record.diameter_a1),
+          diameterA2: formatFloat(record.diameter_a2),
+          diameterB1: formatFloat(record.diameter_b1),
+          diameterB2: formatFloat(record.diameter_b2),
+          roundnessA: formatFloat(record.roundness_a),
+          roundnessB: formatFloat(record.roundness_b),
+          cylindricity: formatFloat(record.cylindricity),
+          result: record.result || ''
+        }
+      })
       
       // 根据角色显示不同的消息
       if (isAdmin.value) {
@@ -344,17 +394,14 @@ const checkExistingInspection = async (projectId, partNumber) => {
         ElMessage.info('该零件已有质检记录，仅管理员可修改')
       }
     } else {
-      // 如果不存在记录，清空表单并允许编辑
-      existingInspection.value = null
-      // 重置表单，但保留零件编号
-      const currentPartNumber = form.value.part_number
-      resetForm()
-      form.value.part_number = currentPartNumber
+      clearExistingInspection()
     }
-  } catch (error) {
+  })
+  .catch(error => {
     console.error('Error checking existing inspection:', error)
     ElMessage.error('检查质检记录时出错')
-  }
+    clearExistingInspection()
+  })
 }
 
 // 选择项目
@@ -371,9 +418,19 @@ const submitForm = async () => {
     if (valid) {
       try {
         let response
+        // Format the data to match backend schema and limit decimal places
         const formData = {
-          ...form.value,
-          project_id: currentProject.value.id
+          project_id: currentProject.value.id,
+          inspector: form.value.inspector,
+          part_number: parseInt(form.value.part_number),
+          diameter_a1: Number(parseFloat(form.value.diameterA1).toFixed(4)),
+          diameter_a2: Number(parseFloat(form.value.diameterA2).toFixed(4)),
+          diameter_b1: Number(parseFloat(form.value.diameterB1).toFixed(4)),
+          diameter_b2: Number(parseFloat(form.value.diameterB2).toFixed(4)),
+          roundness_a: Number(parseFloat(form.value.roundnessA).toFixed(4)),
+          roundness_b: Number(parseFloat(form.value.roundnessB).toFixed(4)),
+          cylindricity: Number(parseFloat(form.value.cylindricity).toFixed(4)),
+          result: form.value.result
         }
 
         if (existingInspection.value && isAdmin.value) {
@@ -396,7 +453,7 @@ const submitForm = async () => {
         await checkExistingInspection(currentProject.value.id, form.value.part_number)
       } catch (error) {
         console.error('Error submitting form:', error)
-        ElMessage.error('提交质检记录时出错')
+        ElMessage.error(error.response?.data?.detail || '提交质检记录时出错')
       }
     }
   })
