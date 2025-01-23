@@ -81,7 +81,7 @@
             <h3>检测信息</h3>
             <div v-if="existingInspection" class="existing-inspection-notice">
               <el-alert
-                title="该零件已经被检测过"
+                :title="isAdmin ? '已加载现有记录，您可以进行修改' : '该零件已有质检记录，仅管理员可修改'"
                 type="info"
                 :closable="false"
                 show-icon
@@ -99,8 +99,8 @@
               <el-input 
                 v-model="form.inspector" 
                 placeholder="请输入检测员姓名"
-                :disabled="existingInspection && !isAdmin"
-                :class="{ 'input-disabled': existingInspection && !isAdmin }"
+                :disabled="!form.part_number || (existingInspection && !isAdmin)"
+                :class="{ 'input-disabled': !form.part_number || (existingInspection && !isAdmin) }"
               />
             </el-form-item>
 
@@ -109,8 +109,8 @@
                 v-model="form.category" 
                 placeholder="请选择检测类型" 
                 class="w-100"
-                :disabled="existingInspection && !isAdmin"
-                :class="{ 'input-disabled': existingInspection && !isAdmin }"
+                :disabled="!form.part_number || (existingInspection && !isAdmin)"
+                :class="{ 'input-disabled': !form.part_number || (existingInspection && !isAdmin) }"
               >
                 <el-option label="圆周度" value="dimension" />
                 <el-option label="外圆直径A" value="external_diameter_a" />
@@ -123,8 +123,8 @@
                 v-model="form.result" 
                 placeholder="请选择检测结果" 
                 class="w-100"
-                :disabled="existingInspection && !isAdmin"
-                :class="{ 'input-disabled': existingInspection && !isAdmin }"
+                :disabled="!form.part_number || (existingInspection && !isAdmin)"
+                :class="{ 'input-disabled': !form.part_number || (existingInspection && !isAdmin) }"
               >
                 <el-option label="合格" value="pass" />
                 <el-option label="不合格" value="fail" />
@@ -136,8 +136,8 @@
                 <el-input 
                   v-model="form.measurement" 
                   placeholder="请输入测量值"
-                  :disabled="existingInspection && !isAdmin"
-                  :class="{ 'input-disabled': existingInspection && !isAdmin }"
+                  :disabled="!form.part_number || (existingInspection && !isAdmin)"
+                  :class="{ 'input-disabled': !form.part_number || (existingInspection && !isAdmin) }"
                 >
                   <template #append>mm</template>
                 </el-input>
@@ -149,9 +149,9 @@
                 type="primary" 
                 @click="submitForm" 
                 class="submit-btn"
-                :disabled="existingInspection && !isAdmin"
+                :disabled="!form.part_number || (existingInspection && !isAdmin)"
               >
-                提交检测记录
+                {{ existingInspection && isAdmin ? '更新记录' : '提交记录' }}
               </el-button>
             </el-form-item>
           </el-form>
@@ -163,7 +163,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
@@ -178,7 +178,7 @@ const projects = ref([])
 const inspectionRecords = ref([])
 const existingInspection = ref(null)
 const formRef = ref(null)
-const isAdmin = ref(false)
+const isAdmin = computed(() => userStore.role === 'admin')
 
 const form = ref({
   inspector: '',
@@ -200,14 +200,7 @@ const rules = {
 watch(() => form.value.part_number, async (newValue) => {
   if (newValue && currentProject.value) {
     await checkExistingInspection(currentProject.value.id, newValue)
-  } else {
-    existingInspection.value = null
   }
-})
-
-// 监听用户角色变化
-watch(() => userStore.user?.role, (newRole) => {
-  isAdmin.value = newRole === 'admin'
 })
 
 // 检查是否存在质检记录
@@ -221,7 +214,7 @@ const checkExistingInspection = async (projectId, partNumber) => {
     })
     if (response.data && response.data.length > 0) {
       const record = response.data[0]
-      // 如果存在记录，根据用户角色决定是否禁用表单
+      // 如果存在记录，设置existingInspection，但管理员可以编辑
       existingInspection.value = record
       // 填充表单数据
       form.value = {
@@ -231,37 +224,24 @@ const checkExistingInspection = async (projectId, partNumber) => {
         result: record.result,
         measurement: record.measurement
       }
-      if (!isAdmin.value) {
-        ElMessage.info('该零件已有质检记录，仅管理员可修改')
-      } else {
+      
+      // 根据角色显示不同的消息
+      if (isAdmin.value) {
         ElMessage.info('已加载现有记录，您可以进行修改')
+      } else {
+        ElMessage.info('该零件已有质检记录，仅管理员可修改')
       }
     } else {
       // 如果不存在记录，清空表单并允许编辑
       existingInspection.value = null
+      // 重置表单，但保留零件编号
+      const currentPartNumber = form.value.part_number
       resetForm()
-      form.value.part_number = partNumber  // 保持当前选择的零件编号
+      form.value.part_number = currentPartNumber
     }
   } catch (error) {
     console.error('Error checking existing inspection:', error)
     ElMessage.error('检查质检记录时出错')
-  }
-}
-
-// 获取项目列表
-const fetchProjects = async () => {
-  loading.value = true
-  try {
-    const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/projects/`)
-    projects.value = response.data
-    if (projects.value.length > 0) {
-      selectProject(projects.value[0])
-    }
-  } catch (error) {
-    console.error('Error fetching projects:', error)
-    ElMessage.error('加载项目列表失败')
-  } finally {
-    loading.value = false
   }
 }
 
@@ -271,19 +251,6 @@ const selectProject = (project) => {
   form.value.part_number = null  // 重置零件编号
   existingInspection.value = null  // 重置已存在的检测记录
   resetForm()
-}
-
-// 获取检测记录
-const fetchInspectionRecords = async (projectId) => {
-  try {
-    const response = await axios.get(
-      `${import.meta.env.VITE_BACKEND_URL}/quality_inspections/?project_id=${projectId}`
-    )
-    inspectionRecords.value = response.data
-  } catch (error) {
-    console.error('Error fetching inspection records:', error)
-    ElMessage.error('加载检测记录失败')
-  }
 }
 
 // 提交表单
@@ -325,15 +292,29 @@ const submitForm = async () => {
 
 // 重置表单
 const resetForm = () => {
-  if (formRef.value) {
-    formRef.value.resetFields()
-  }
   form.value = {
     inspector: '',
     category: '',
     result: '',
     measurement: '',
     part_number: null
+  }
+}
+
+// 获取项目列表
+const fetchProjects = async () => {
+  loading.value = true
+  try {
+    const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/projects/`)
+    projects.value = response.data
+    if (projects.value.length > 0) {
+      selectProject(projects.value[0])
+    }
+  } catch (error) {
+    console.error('Error fetching projects:', error)
+    ElMessage.error('加载项目列表失败')
+  } finally {
+    loading.value = false
   }
 }
 
@@ -375,7 +356,6 @@ const getTimelineType = (result) => {
 }
 
 onMounted(async () => {
-  isAdmin.value = userStore.user?.role === 'admin'  // 直接使用当前角色
   await fetchProjects()
 })
 </script>
